@@ -1,0 +1,24 @@
+{
+    "remotePath": "/home/jinzhanyu/jd/baseline",
+    "host": "192.168.1.110",
+    "username": "jinzhanyu",
+    "password": "jinzhanyu",
+    "port": 2222,
+    "secure": false,
+    "protocol": "sftp",
+    "uploadOnSave": true,
+    "passive": false,
+    "debug": false,
+    "privateKeyPath": null,
+    "passphrase": null,
+    "ignore": [
+        "\\.vscode",
+        "\\.git",
+        "\\.DS_Store"
+    ],
+    "generatedFiles": {
+        "uploadOnSave": false,
+        "extensionsToInclude": [],
+        "path": ""
+    }
+}
