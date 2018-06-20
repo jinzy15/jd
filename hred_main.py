@@ -24,13 +24,12 @@ mydata.loadfnp('data/clean_group.npy')
 
 input_size = mylang.n_words
 output_size = mylang.n_words
-hidden_size = 128
 
 trainloader = DataLoader(mydata)
 testloader = DataLoader(mydata)
 
-encoder = Modules.SessionEncoderRNN(700000, hidden_size,batch_size).to(device)
-decoder = Modules.DecoderRNN(hidden_size, 700000).to(device)
+encoder = Modules.SessionEncoderRNN(input_size, hidden_size,batch_size).to(device)
+decoder = Modules.DecoderRNN(hidden_size, output_size).to(device)
 context = Modules.ContextRNN(hidden_size,hidden_size).to(device)
 
 if (use_histmodel):
@@ -42,9 +41,9 @@ mymodel = LHRED(mydata,trainloader,testloader,encoder,decoder,context)
 
 if(is_train):
     # mymodel.trainEpoch(2,1)
-    mymodel.trainIters(200, 1)
+    mymodel.trainIters(2000, 10)
 
 if(is_evaluate):
-    mymodel.evaluateRandomly()
+    mymodel.evaluateRandomly(10)
 
 

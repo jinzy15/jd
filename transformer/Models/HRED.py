@@ -1,12 +1,3 @@
-# import time
-# import transformer.Models.Models as Models
-# from torch import optim
-# import torch.nn as nn
-# from utils.Timer import timeSince
-# import pickle as pkl
-# from torch.autograd import Variable
-# import random
-# import torch
 from transformer.Models.Models import *
 
 class HRED(Models):
@@ -71,7 +62,7 @@ class HRED(Models):
                                 break
                             decoder_output,decode_hidden = self.decoder(decoder_input,decoder_hidden)
                             topv, topi = decoder_output.data.topk(1)
-                            ni = topi[0][0]
+                            ni = int(topi[0][0])
                             # print(decoder_output)
                             # print(ni)
                             decoder_input = torch.tensor(ni,device=device)
@@ -84,8 +75,6 @@ class HRED(Models):
                             encoder_optimizer.step()
                             context_optimizer.step()
                             decoder_optimizer.step()
-
-
                             if ni == EOS_token:
                                 break
                 # loss.backward(retain_graph=True)
@@ -129,7 +118,7 @@ class HRED(Models):
                     torch.save(self.decoder.state_dict(), 'train_fruit/' + description + '_decoder.pkl')
                     torch.save(self.context.state_dict(), 'train_fruit/' + description + '_context.pkl')
 
-    def trainIters(self,n_iters, print_every=1000, plot_every=100, learning_rate=0.01):
+    def trainIters(self,n_iters, print_every=1000, plot_every=100, learning_rate=0.0001):
 
         start = time.time()
         plot_losses = []
@@ -162,41 +151,36 @@ class HRED(Models):
 
 
     def evaluate(self,sentences,max):
-
+        encoder_hidden = torch.zeros(1, batch_size, hidden_size, device=device)
+        in_session,num_sentences = self.dataset.tensorsFromSession(sentences)
+        in_session, session_hidden = self.encoder(in_session, encoder_hidden)
         max_length = max
         decoded_words = []
         context_hidden = self.context.initHidden()
 
-        for i, sentence in enumerate(sentences):
-            last = False
-            if i + 1 == len(sentences):
-                last = True
+        for idx, sentence in enumerate(torch.transpose(session_hidden, 1, 0)):
+            context_input = sentence[-1]
+            context_output, context_hidden = self.context(context_input, context_hidden)
+        decoder_input = torch.LongTensor([[SOS_token]], device=device)  # SOS
 
-            input_variable = self.dataset.tensorFromSentence(sentence)
-            input_length = input_variable.size()[0]
-            encoder_hidden = self.encoder.initHidden()
+        if use_cuda:
+            decoder_input = decoder_input.cuda()
 
-            encoder_outputs = Variable(torch.zeros(max_length, self.encoder.hidden_size,device = device))
+        decoder_hidden = context_hidden
+        decoder_output = decoder_input
 
-            for ei in range(input_length):
-                encoder_output, encoder_hidden = self.encoder(input_variable[ei],encoder_hidden)
-
-            decoder_input = Variable(torch.LongTensor([[self.SOS_token]],device = device))  # SOS
-
-
-            # calculate context
-            context_output, context_hidden = self.context(encoder_output, context_hidden)
-
-            for di in range(max_length):
-                decoder_output , decoder_hidden = self.decoder(decoder_input, context_hidden)
-                topv, topi = decoder_output.data.topk(1)
-                ni = topi[0][0]
-                if last:
-                    if ni == self.EOS_token:
-                        decoded_words.append('<eos>')
-                        break
-                    else:
-                        decoded_words.append(self.dataset.lang.index2word[ni])
+        for di in range(max_length):
+            # print(decoder_output,context_hidden)
+            decoder_output , decoder_hidden = self.decoder(decoder_output, decoder_hidden)
+            topv, topi = decoder_output.data.topk(1)
+            ni = int(topi[0][0])
+            # print(ni)
+            if ni == EOS_token:
+                decoded_words.append('<eos>')
+                break
+            else:
+                decoded_words.append(self.dataset.lang.index2word[ni])
+            decoder_output = torch.LongTensor([[ni]], device=device).cuda()
         return decoded_words
 
     def evaluateRandomly(self,n):
@@ -204,7 +188,7 @@ class HRED(Models):
             session = random.choice(self.dataset.sessions)
             print('>', session[0:-1])
             print('=', session[-1])
-            output_words = self.evaluate(pair[0])
+            output_words = self.evaluate(session[0:-1],MAX_LENGTH)
             output_sentence = ' '.join(output_words)
             print('<', output_sentence)
             print('')
