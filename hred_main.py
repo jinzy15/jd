@@ -19,8 +19,8 @@ mylang = Lang.npLang('all','data/clean_group.npy')
 mylang.loadLang('./utils/npLang')
 print('all words',mylang.n_words)
 
-mydata = groupSet(mylang)
-mydata.loadfnp('data/clean_group.npy')
+mydata = groupSet(mylang,batch_size)
+mydata.loadfnp(numpy_file)
 
 input_size = mylang.n_words
 output_size = mylang.n_words
@@ -39,11 +39,12 @@ if (use_histmodel):
 
 mymodel = LHRED(mydata,trainloader,testloader,encoder,decoder,context)
 
-if(is_train):
-    # mymodel.trainEpoch(2,1)
-    mymodel.trainIters(2000, 10)
 
-if(is_evaluate):
-    mymodel.evaluateRandomly(10)
+for i in range(20):
+    if(is_train):
+        mymodel.trainEpoch(10,50)
+        # mymodel.trainIters(200, 10)
+    if(is_evaluate):
+        mymodel.evaluateRandomly(10)
 
 

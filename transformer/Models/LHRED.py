@@ -23,6 +23,10 @@ class LHRED(HRED):
                         target_sentence = session[len_session-1]
                         target_length = len(target_sentence)
                         use_teacher_forcing = True if random.random() < 0.5 else False
+                        loss = 0
+                        encoder_optimizer.zero_grad()
+                        decoder_optimizer.zero_grad()
+                        context_optimizer.zero_grad()
 
                         if use_teacher_forcing:
                             # Teacher forcing: Feed the target as the next input
@@ -30,16 +34,11 @@ class LHRED(HRED):
                                 if(int(target_sentence[di])==0):
                                     break
                                 decoder_output,decode_hidden = self.decoder(decoder_input,decoder_hidden)
-                                encoder_optimizer.zero_grad()
-                                decoder_optimizer.zero_grad()
-                                context_optimizer.zero_grad()
-                                loss = criterion(decoder_output, Variable(torch.tensor([target_sentence[di]],device=device)))
+
+                                loss += criterion(decoder_output, Variable(torch.tensor([target_sentence[di]],device=device)))
                                 # print(loss)
 
-                                loss.backward(retain_graph = True)
-                                encoder_optimizer.step()
-                                context_optimizer.step()
-                                decoder_optimizer.step()
+
                                 decoder_input = target_sentence[di]  # Teacher forcing
                                 # print(decoder_input)
                                 if int(decoder_input) == EOS_token:
@@ -60,12 +59,12 @@ class LHRED(HRED):
                                 decoder_optimizer.zero_grad()
                                 context_optimizer.zero_grad()
                                 loss += criterion(decoder_output, Variable(torch.tensor([target_sentence[di]], device=device)))
-                                loss.backward(retain_graph=True)
-                                encoder_optimizer.step()
-                                context_optimizer.step()
-                                decoder_optimizer.step()
                                 if int(ni) == EOS_token:
                                     break
+                        loss.backward()
+                        encoder_optimizer.step()
+                        context_optimizer.step()
+                        decoder_optimizer.step()
             return loss
         else:
             print('fuck')

@@ -40,10 +40,7 @@ class HRED(Models):
                             if(target_sentence[di]==0):
                                 break
                             decoder_output,decode_hidden = self.decoder(decoder_input,decoder_hidden)
-                            # print(decoder_output.shape)
-                            # print(decoder_output)
-                            # print(type(decoder_output),type(decode_hidden))
-                            # print(type(Variable(torch.LongTensor([target_sentence[di]],device=device))))
+
                             print(decoder_output, Variable(torch.tensor([target_sentence[di]],device=device)))
                             if (di >= self.dataset.lang.n_words) or (di < 0):
                                 import pdb; pdb.set_trace()
@@ -77,10 +74,7 @@ class HRED(Models):
                             decoder_optimizer.step()
                             if ni == EOS_token:
                                 break
-                # loss.backward(retain_graph=True)
-                # encoder_optimizer.step()
-                # context_optimizer.step()
-                # decoder_optimizer.step()
+
             return loss.item()
         else:
             print('fuck')
@@ -118,7 +112,7 @@ class HRED(Models):
                     torch.save(self.decoder.state_dict(), 'train_fruit/' + description + '_decoder.pkl')
                     torch.save(self.context.state_dict(), 'train_fruit/' + description + '_context.pkl')
 
-    def trainIters(self,n_iters, print_every=1000, plot_every=100, learning_rate=0.0001):
+    def trainIters(self,n_iters, print_every=100, evaluate_every = 100,save_every=100, learning_rate=0.0001):
 
         start = time.time()
         plot_losses = []
@@ -144,10 +138,18 @@ class HRED(Models):
                 print('%s (%d %d%%) %.4f' % (timeSince(start, iter / n_iters),
                                              iter, iter / n_iters * 100, print_loss_avg))
 
-            if iter % plot_every == 0:
-                plot_loss_avg = plot_loss_total / plot_every
-                plot_losses.append(plot_loss_avg)
-                plot_loss_total = 0
+
+
+            if iter % save_every == 0:
+                torch.save(self.encoder.state_dict(), 'train_fruit/' + description + '_encoder.pkl')
+                torch.save(self.decoder.state_dict(), 'train_fruit/' + description + '_decoder.pkl')
+                torch.save(self.context.state_dict(), 'train_fruit/' + description + '_context.pkl')
+                # plot_loss_avg = plot_loss_total / plot_every
+                # plot_losses.append(plot_loss_avg)
+                # plot_loss_total = 0
+
+            if iter % evaluate_every == 0:
+                session
 
 
     def evaluate(self,sentences,max):
@@ -167,21 +169,25 @@ class HRED(Models):
             decoder_input = decoder_input.cuda()
 
         decoder_hidden = context_hidden
-        decoder_output = decoder_input
+        # decoder_output = decoder_input
 
         for di in range(max_length):
             # print(decoder_output,context_hidden)
-            decoder_output , decoder_hidden = self.decoder(decoder_output, decoder_hidden)
+            decoder_output , decoder_hidden = self.decoder(decoder_input, decoder_hidden)
             topv, topi = decoder_output.data.topk(1)
             ni = int(topi[0][0])
             # print(ni)
             if ni == EOS_token:
-                decoded_words.append('<eos>')
+                decoded_words.append('<EOS>')
                 break
             else:
                 decoded_words.append(self.dataset.lang.index2word[ni])
-            decoder_output = torch.LongTensor([[ni]], device=device).cuda()
+            decoder_input = torch.LongTensor([[ni]], device=device).cuda()
         return decoded_words
+
+    def sen2torch(self,origin_sess,torch_sess):
+        pass
+
 
     def evaluateRandomly(self,n):
         for i in range(n):
