@@ -39,6 +39,7 @@ def ch_normalizeString(item):
     for s in item:
         if(type(s)==str):
             s = s.encode().decode("utf8")
+             s = re.sub("数字x".encode().decode("utf8"),"".encode().decode("utf8"), s)
             s = re.sub("[A-Za-z0-9\s+\.\!\/_,$%^*(+\"\']+|[+——《》【】：”“！-，。？?、~@#￥%……&*（）]+:".encode().decode("utf8"),
                        "".encode().decode("utf8"), s)
             s = translate(s)
